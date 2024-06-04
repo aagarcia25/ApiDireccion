@@ -24,30 +24,34 @@ app.use(cors());
 
 function getInfoByCP({ cp, estado, mnpio, asenta }) {
   return new Promise((resolve, reject) => {
-    let insertQuery = '';
+    let insertQuery = "";
     let params = [cp];
 
     if (cp && !estado && !mnpio && !asenta) {
-      insertQuery = 'SELECT pl.d_estado FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ?';
+      insertQuery =
+        "SELECT distinct pl.d_estado FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ?";
     } else if (cp && estado && !mnpio && !asenta) {
-      insertQuery = 'SELECT pl.D_mnpio FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ?';
+      insertQuery =
+        "SELECT distinct pl.D_mnpio FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ?";
       params.push(estado);
     } else if (cp && estado && mnpio && !asenta) {
-      insertQuery = 'SELECT pl.d_tipo_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ?';
+      insertQuery =
+        "SELECT distinct pl.d_tipo_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ?";
       params.push(estado, mnpio);
     } else if (cp && estado && mnpio && asenta) {
-      insertQuery = 'SELECT pl.d_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ? AND pl.d_tipo_asenta = ?';
+      insertQuery =
+        "SELECT distinct pl.d_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ? AND pl.d_tipo_asenta = ?";
       params.push(estado, mnpio, asenta);
     }
 
-    if (insertQuery === '') {
-      return reject(new Error('No se proporcionaron los parámetros correctos'));
+    if (insertQuery === "") {
+      return reject(new Error("No se proporcionaron los parámetros correctos"));
     }
 
     db_connect.query(insertQuery, params, (err, result) => {
       if (err) {
         return reject(err);
-      } 
+      }
       resolve(result);
     });
   });
@@ -84,7 +88,7 @@ function insertData(data) {
         c_cve_ciudad = VALUES(c_cve_ciudad)
     `;
 
-    const promises = data.map(row => {
+    const promises = data.map((row) => {
       const values = [
         row.d_codigo,
         row.d_asenta,
@@ -119,7 +123,6 @@ function insertData(data) {
   });
 }
 
-
 // Ruta para manejar la subida del archivo Excel
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
@@ -136,10 +139,11 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     res.status(200).json({ message: "Data inserted successfully" });
   } catch (error) {
     console.error("Error processing file:", error);
-    res.status(500).json({ error: "Internal server error", msg: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", msg: error.message });
   }
 });
-
 
 const server = app.listen(PORT, HOST, () => {
   const { address, port } = server.address();
