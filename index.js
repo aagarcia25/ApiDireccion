@@ -1,17 +1,13 @@
 const dotenv = require("dotenv");
 const express = require("express");
 const fs2 = require("fs").promises;
-const path = require("path");
-const { v4: uuidv4 } = require("uuid");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const fs = require("fs");
 const multer = require("multer");
 const xlsx = require("xlsx");
-const ruta = "D:\\PLADI";
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-const { parse, format } = require("date-fns");
 dotenv.config();
 const app = express();
 const PORT = 3002;
@@ -29,14 +25,14 @@ function getInfoByCP({ cp, estado, mnpio }) {
 
     if (cp && !estado && !mnpio) {
       insertQuery =
-        "SELECT distinct pl.d_estado FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ?";
+        "SELECT distinct  pl.d_estado AS id , pl.d_estado AS label   FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ?";
     } else if (cp && estado && !mnpio) {
       insertQuery =
-        "SELECT distinct pl.D_mnpio FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ?";
+        "SELECT distinct pl.d_ciudad AS id , pl.d_ciudad AS label FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ?";
       params.push(estado);
     } else if (cp && estado && mnpio) {
       insertQuery =
-        "SELECT distinct pl.d_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ?";
+        "SELECT distinct pl.d_asenta AS id , pl.d_asenta AS label FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ?";
       params.push(estado, mnpio);
     }
 
@@ -56,7 +52,8 @@ app.get("/Info", async (req, res) => {
   const { cp, estado, mnpio } = req.query;
   try {
     const result = await getInfoByCP({ cp, estado, mnpio });
-    res.json(result);
+    const responseData = uil.buildResponse(result, true, 200, "Éxito");
+    res.status(200).json(responseData);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
