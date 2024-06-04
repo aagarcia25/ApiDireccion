@@ -1,4 +1,4 @@
-const db = require("../Server/db.js");
+const db = require("./db.js");
 
 const buildResponse = (response, success, numCode, strMessage) => ({
   RESPONSE: response,

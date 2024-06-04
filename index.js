@@ -16,21 +16,75 @@ dotenv.config();
 const app = express();
 const PORT = 3001;
 const HOST = "0.0.0.0";
-const uil = require("responseBuilder.js");
+const uil = require("./responseBuilder.js");
 const db_connect = require("./db"); // Importa la configuración de la base de datos
 
 app.use(bodyParser.json());
 app.use(cors());
 
+function getInfoByCP({ cp, estado, mnpio, asenta }) {
+  return new Promise((resolve, reject) => {
+    let insertQuery = '';
+    let params = [cp];
+
+    if (cp && !estado && !mnpio && !asenta) {
+      insertQuery = 'SELECT pl.d_estado FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ?';
+    } else if (cp && estado && !mnpio && !asenta) {
+      insertQuery = 'SELECT pl.D_mnpio FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ?';
+      params.push(estado);
+    } else if (cp && estado && mnpio && !asenta) {
+      insertQuery = 'SELECT pl.d_tipo_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ?';
+      params.push(estado, mnpio);
+    } else if (cp && estado && mnpio && asenta) {
+      insertQuery = 'SELECT pl.d_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ? AND pl.d_tipo_asenta = ?';
+      params.push(estado, mnpio, asenta);
+    }
+
+    if (insertQuery === '') {
+      return reject(new Error('No se proporcionaron los parámetros correctos'));
+    }
+
+    db_connect.query(insertQuery, params, (err, result) => {
+      if (err) {
+        return reject(err);
+      } 
+      resolve(result);
+    });
+  });
+}
+app.get("/Info", async (req, res) => {
+  const { cp, estado, mnpio, asenta } = req.query;
+  try {
+    const result = await getInfoByCP({ cp, estado, mnpio, asenta });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 function insertData(data) {
   return new Promise((resolve, reject) => {
     const insertQuery = `
-      INSERT INTO plantilla ( d_codigo, d_asenta, d_tipo_asenta, D_mnpio, d_estado, d_ciudad, d_CP,c_estado,c_oficina,c_CP,c_tipo_asenta,c_mnpio,id_asenta_cpcons,d_zona,c_cve_ciudad)
-      VALUES ( ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?,?,?)
+      INSERT INTO plantilla (d_codigo, d_asenta, d_tipo_asenta, D_mnpio, d_estado, d_ciudad, d_CP, c_estado, c_oficina, c_CP, c_tipo_asenta, c_mnpio, id_asenta_cpcons, d_zona, c_cve_ciudad)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        d_asenta = VALUES(d_asenta),
+        d_tipo_asenta = VALUES(d_tipo_asenta),
+        D_mnpio = VALUES(D_mnpio),
+        d_estado = VALUES(d_estado),
+        d_ciudad = VALUES(d_ciudad),
+        d_CP = VALUES(d_CP),
+        c_estado = VALUES(c_estado),
+        c_oficina = VALUES(c_oficina),
+        c_CP = VALUES(c_CP),
+        c_tipo_asenta = VALUES(c_tipo_asenta),
+        c_mnpio = VALUES(c_mnpio),
+        id_asenta_cpcons = VALUES(id_asenta_cpcons),
+        d_zona = VALUES(d_zona),
+        c_cve_ciudad = VALUES(c_cve_ciudad)
     `;
 
-    for (const row of data) {
-      print(row);
+    const promises = data.map(row => {
       const values = [
         row.d_codigo,
         row.d_asenta,
@@ -49,15 +103,22 @@ function insertData(data) {
         row.c_cve_ciudad,
       ];
       console.log(values);
-      db_connect.query(insertQuery, values, (err) => {
-        if (err) {
-          return reject(err);
-        }
+      return new Promise((resolve, reject) => {
+        db_connect.query(insertQuery, values, (err) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve();
+        });
       });
-    }
-    resolve();
+    });
+
+    Promise.all(promises)
+      .then(() => resolve())
+      .catch((err) => reject(err));
   });
 }
+
 
 // Ruta para manejar la subida del archivo Excel
 app.post("/upload", upload.single("file"), async (req, res) => {
@@ -75,9 +136,10 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     res.status(200).json({ message: "Data inserted successfully" });
   } catch (error) {
     console.error("Error processing file:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error", msg: error.message });
   }
 });
+
 
 const server = app.listen(PORT, HOST, () => {
   const { address, port } = server.address();
