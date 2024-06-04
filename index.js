@@ -14,7 +14,7 @@ const upload = multer({ storage: storage });
 const { parse, format } = require("date-fns");
 dotenv.config();
 const app = express();
-const PORT = 3001;
+const PORT = 3002;
 const HOST = "0.0.0.0";
 const uil = require("./responseBuilder.js");
 const db_connect = require("./db"); // Importa la configuración de la base de datos
@@ -22,26 +22,22 @@ const db_connect = require("./db"); // Importa la configuración de la base de d
 app.use(bodyParser.json());
 app.use(cors());
 
-function getInfoByCP({ cp, estado, mnpio, asenta }) {
+function getInfoByCP({ cp, estado, mnpio }) {
   return new Promise((resolve, reject) => {
     let insertQuery = "";
     let params = [cp];
 
-    if (cp && !estado && !mnpio && !asenta) {
+    if (cp && !estado && !mnpio) {
       insertQuery =
         "SELECT distinct pl.d_estado FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ?";
-    } else if (cp && estado && !mnpio && !asenta) {
+    } else if (cp && estado && !mnpio) {
       insertQuery =
         "SELECT distinct pl.D_mnpio FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ?";
       params.push(estado);
-    } else if (cp && estado && mnpio && !asenta) {
+    } else if (cp && estado && mnpio) {
       insertQuery =
-        "SELECT distinct pl.d_tipo_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ?";
+        "SELECT distinct pl.d_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ?";
       params.push(estado, mnpio);
-    } else if (cp && estado && mnpio && asenta) {
-      insertQuery =
-        "SELECT distinct pl.d_asenta FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ? AND pl.D_mnpio = ? AND pl.d_tipo_asenta = ?";
-      params.push(estado, mnpio, asenta);
     }
 
     if (insertQuery === "") {
@@ -57,9 +53,9 @@ function getInfoByCP({ cp, estado, mnpio, asenta }) {
   });
 }
 app.get("/Info", async (req, res) => {
-  const { cp, estado, mnpio, asenta } = req.query;
+  const { cp, estado, mnpio } = req.query;
   try {
-    const result = await getInfoByCP({ cp, estado, mnpio, asenta });
+    const result = await getInfoByCP({ cp, estado, mnpio });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
