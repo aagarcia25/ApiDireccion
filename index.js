@@ -10,7 +10,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 dotenv.config();
 const app = express();
-const PORT = 3002;
+const PORT = 3010;
 const HOST = "0.0.0.0";
 const uil = require("./responseBuilder.js");
 const db_connect = require("./db"); // Importa la configuración de la base de datos
