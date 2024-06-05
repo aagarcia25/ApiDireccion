@@ -6,6 +6,7 @@ const db_config = {
   database: process.env.APP_DB_DATABASE,
   password: process.env.APP_DB_PASSWORD,
 };
+
 let db_connect;
 
 function handleDisconnect() {
@@ -22,8 +23,16 @@ function handleDisconnect() {
   });
 
   db_connect.on("error", (err) => {
-    if (err.code === "PROTOCOL_CONNECTION_LOST" || err.code === "ECONNRESET") {
-      console.error("Se perdió la conexión con la base de datos.");
+    console.error("Error en la conexión a la base de datos:", err);
+    if (
+      err.code === "PROTOCOL_CONNECTION_LOST" ||
+      err.code === "ECONNRESET" ||
+      err.code === "ETIMEDOUT" ||
+      err.code === "EHOSTUNREACH"
+    ) {
+      console.error(
+        "Se perdió la conexión con la base de datos. Intentando reconectar..."
+      );
       // Reintentar la conexión después de 1 minuto
       setTimeout(handleDisconnect, 60000);
     } else {
