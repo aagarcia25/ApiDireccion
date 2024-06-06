@@ -65,10 +65,8 @@ function getAllInfo({ cp }) {
       return reject(new Error("No se proporcionaron los parámetros correctos"));
     }
 
-    let insertQuery = "";
     let params = [cp];
 
-    let insertQuery1 = " SELECT * FROM plantilla WHERE d_codigo= ? ; ";
 
     let insertQuery2 =
       "SELECT DISTINCT d_codigo, d_estado AS id , d_estado AS label  FROM plantilla WHERE d_codigo= ? ;";
@@ -80,12 +78,7 @@ function getAllInfo({ cp }) {
       "SELECT distinct d_ciudad   ,d_asenta AS id , d_asenta AS label  FROM plantilla WHERE d_codigo= ? ;";
 
     Promise.all([
-      new Promise((resolve, reject) => {
-        db_connect.query(insertQuery1, params, (err, result) => {
-          if (err) return reject(err);
-          resolve(result);
-        });
-      }),
+    
       new Promise((resolve, reject) => {
         db_connect.query(insertQuery2, params, (err, result) => {
           if (err) return reject(err);
@@ -108,10 +101,9 @@ function getAllInfo({ cp }) {
       .then((results) => {
         // Combine all results into one object
         const combinedResults = {
-          query1: results[0],
-          query2: results[1],
-          query3: results[2],
-          query4: results[3],
+          estado: results[0],
+          municipio: results[1],
+          asentamiento: results[2],
         };
         resolve(combinedResults);
       })
