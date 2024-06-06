@@ -5,24 +5,27 @@ const db_config = {
   user: process.env.APP_DB_USER,
   database: process.env.APP_DB_DATABASE,
   password: process.env.APP_DB_PASSWORD,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 };
 
-let db_connect;
+const pool = mysql.createPool(db_config);
 
-function handleDisconnect() {
-  db_connect = mysql.createConnection(db_config);
-
-  db_connect.connect((err) => {
+// Ping a la base de datos cada 5 minutos para mantener la conexión activa
+setInterval(() => {
+  pool.query("SELECT 1", (err) => {
     if (err) {
-      console.error("Error de conexión a la base de datos:", err);
-      // Reintentar la conexión después de 1 minuto
-      setTimeout(handleDisconnect, 60000);
+      console.error("Error en el ping a la base de datos:", err);
     } else {
-      console.log("Conexión exitosa a la base de datos");
+      console.log("Ping a la base de datos exitoso");
     }
   });
+}, 300000); // 300000 ms = 5 minutos
 
-  db_connect.on("error", (err) => {
+pool.on("connection", (connection) => {
+  console.log("Nueva conexión establecida:", connection.threadId);
+  connection.on("error", (err) => {
     console.error("Error en la conexión a la base de datos:", err);
     if (
       err.code === "PROTOCOL_CONNECTION_LOST" ||
@@ -30,17 +33,11 @@ function handleDisconnect() {
       err.code === "ETIMEDOUT" ||
       err.code === "EHOSTUNREACH"
     ) {
-      console.error(
-        "Se perdió la conexión con la base de datos. Intentando reconectar..."
-      );
-      // Reintentar la conexión después de 1 minuto
-      setTimeout(handleDisconnect, 60000);
+      console.error("Se perdió la conexión con la base de datos.");
     } else {
       throw err;
     }
   });
-}
+});
 
-handleDisconnect();
-
-module.exports = db_connect;
+module.exports = pool;
