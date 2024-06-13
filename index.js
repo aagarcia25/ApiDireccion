@@ -28,7 +28,7 @@ function getInfoByCP({ cp, estado, mnpio }) {
         "SELECT distinct  pl.d_estado AS id , pl.d_estado AS label   FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ?";
     } else if (cp && estado && !mnpio) {
       insertQuery =
-        "SELECT distinct pl.d_ciudad AS id , pl.d_ciudad AS label FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ?";
+        "SELECT distinct pl.D_mnpio AS id , pl.D_mnpio AS label FROM DIRECCIONES.plantilla pl WHERE pl.d_codigo = ? AND pl.d_estado = ?";
       params.push(estado);
     } else if (cp && estado && mnpio) {
       insertQuery =
@@ -67,18 +67,16 @@ function getAllInfo({ cp }) {
 
     let params = [cp];
 
-
     let insertQuery2 =
       "SELECT DISTINCT d_codigo, d_estado AS id , d_estado AS label  FROM plantilla WHERE d_codigo= ? ;";
 
     let insertQuery3 =
-      "SELECT distinct d_estado   ,d_ciudad AS id , d_ciudad AS label  FROM plantilla WHERE d_codigo= ? ;";
+      "SELECT distinct d_estado   ,D_mnpio AS id , D_mnpio AS label  FROM plantilla WHERE d_codigo= ? ;";
 
     let insertQuery4 =
       "SELECT distinct d_ciudad   ,d_asenta AS id , d_asenta AS label  FROM plantilla WHERE d_codigo= ? ;";
 
     Promise.all([
-    
       new Promise((resolve, reject) => {
         db_connect.query(insertQuery2, params, (err, result) => {
           if (err) return reject(err);
